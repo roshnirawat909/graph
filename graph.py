@@ -1,195 +1,86 @@
-
+import streamlit as st
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+st.set_page_config(
+    page_title="Employee Data Visualization",
+    page_icon="📊",
+    layout="wide"
+)
 
-# ==========================================
-# 1. LOAD DATASET
-# ==========================================
+st.title("📊 Employee Data Visualization")
+st.write("Explore employee details, salary patterns, and department-wise insights.")
 
-# Find employee_data.csv in the same folder as this Python file
 file_path = Path(__file__).parent / "employee_data.csv"
 
-df = pd.read_csv(file_path)
+try:
+    df = pd.read_csv(file_path)
+except FileNotFoundError:
+    st.error("employee_data.csv was not found. Upload it to the same folder as graph.py.")
+    st.stop()
 
+st.subheader("Dataset Preview")
+st.dataframe(df.head(), use_container_width=True)
 
-# ==========================================
-# 2. DISPLAY DATASET
-# ==========================================
+col1, col2, col3 = st.columns(3)
+col1.metric("Total Employees", len(df))
+col2.metric("Departments", df["Department"].nunique())
+col3.metric("Average Salary", f"{df['Salary'].mean():,.2f}")
 
-print("\n========== FIRST 5 ROWS ==========")
-print(df.head())
+st.subheader("Dataset Information")
+st.write("Missing values:")
+st.dataframe(df.isnull().sum().rename("Missing Values"))
 
+st.subheader("Statistical Summary")
+st.dataframe(df.describe())
 
-# ==========================================
-# 3. DATASET INFORMATION
-# ==========================================
+st.subheader("Average Salary by Department")
+average_salary = df.groupby("Department")["Salary"].mean().reset_index()
 
-print("\n========== DATASET INFORMATION ==========")
-df.info()
+fig, ax = plt.subplots(figsize=(8, 5))
+sns.barplot(data=average_salary, x="Department", y="Salary", ax=ax)
+ax.set_title("Average Salary by Department")
+ax.set_xlabel("Department")
+ax.set_ylabel("Average Salary")
+plt.xticks(rotation=30)
+st.pyplot(fig)
 
+st.subheader("Salary Distribution")
+fig, ax = plt.subplots(figsize=(8, 5))
+sns.histplot(df["Salary"], bins=5, kde=True, ax=ax)
+ax.set_title("Salary Distribution")
+ax.set_xlabel("Salary")
+ax.set_ylabel("Number of Employees")
+st.pyplot(fig)
 
-# ==========================================
-# 4. STATISTICAL SUMMARY
-# ==========================================
-
-print("\n========== STATISTICAL SUMMARY ==========")
-print(df.describe())
-
-
-# ==========================================
-# 5. CHECK MISSING VALUES
-# ==========================================
-
-print("\n========== MISSING VALUES ==========")
-print(df.isnull().sum())
-
-
-# ==========================================
-# 6. CHECK DUPLICATE RECORDS
-# ==========================================
-
-print("\n========== DUPLICATE RECORDS ==========")
-print(df.duplicated().sum())
-
-
-# ==========================================
-# 7. DEPARTMENT-WISE AVERAGE SALARY
-# ==========================================
-
-print("\n========== AVERAGE SALARY BY DEPARTMENT ==========")
-
-average_salary = df.groupby("Department")["Salary"].mean()
-
-print(average_salary)
-
-
-# ==========================================
-# 8. EMPLOYEE COUNT BY DEPARTMENT
-# ==========================================
-
-print("\n========== EMPLOYEE COUNT BY DEPARTMENT ==========")
-
-employee_count = df["Department"].value_counts()
-
-print(employee_count)
-
-
-# ==========================================
-# 9. CORRELATION
-# ==========================================
-
-print("\n========== CORRELATION MATRIX ==========")
-
-corr = df.corr(numeric_only=True)
-
-print(corr)
-
-
-# ==========================================
-# 10. BAR PLOT
-# ==========================================
-
-plt.figure(figsize=(8, 5))
-
-sns.barplot(
-    x="Department",
-    y="Salary",
-    data=df
-)
-
-plt.title("Average Salary by Department")
-plt.xlabel("Department")
-plt.ylabel("Average Salary")
-
-plt.tight_layout()
-plt.show()
-
-
-# ==========================================
-# 11. HISTOGRAM
-# ==========================================
-
-plt.figure(figsize=(8, 5))
-
-sns.histplot(
-    df["Salary"],
-    bins=5,
-    kde=True
-)
-
-plt.title("Salary Distribution")
-plt.xlabel("Salary")
-plt.ylabel("Number of Employees")
-
-plt.tight_layout()
-plt.show()
-
-
-# ==========================================
-# 12. SCATTER PLOT
-# ==========================================
-
-plt.figure(figsize=(8, 5))
-
+st.subheader("Experience vs Salary")
+fig, ax = plt.subplots(figsize=(8, 5))
 sns.scatterplot(
+    data=df,
     x="Experience",
     y="Salary",
     hue="Department",
-    data=df
+    s=100,
+    ax=ax
 )
+ax.set_title("Experience vs Salary")
+ax.set_xlabel("Experience (Years)")
+ax.set_ylabel("Salary")
+st.pyplot(fig)
 
-plt.title("Experience vs Salary")
-plt.xlabel("Experience (Years)")
-plt.ylabel("Salary")
+st.subheader("Salary Outliers")
+fig, ax = plt.subplots(figsize=(6, 5))
+sns.boxplot(data=df, y="Salary", ax=ax)
+ax.set_title("Salary Outliers")
+ax.set_ylabel("Salary")
+st.pyplot(fig)
 
-plt.tight_layout()
-plt.show()
+st.subheader("Correlation Matrix")
+corr = df.corr(numeric_only=True)
 
-
-# ==========================================
-# 13. BOX PLOT
-# ==========================================
-
-plt.figure(figsize=(6, 5))
-
-sns.boxplot(
-    y="Salary",
-    data=df
-)
-
-plt.title("Salary Outliers")
-plt.ylabel("Salary")
-
-plt.tight_layout()
-plt.show()
-
-
-# ==========================================
-# 14. HEATMAP
-# ==========================================
-
-plt.figure(figsize=(8, 5))
-
-sns.heatmap(
-    corr,
-    annot=True,
-    cmap="coolwarm",
-    fmt=".2f"
-)
-
-plt.title("Correlation Matrix")
-
-plt.tight_layout()
-plt.show()
-
-
-# ==========================================
-# END
-# ==========================================
-5
-print("\n========== ANALYSIS COMPLETED ==========")
-
-
+fig, ax = plt.subplots(figsize=(8, 5))
+sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
+ax.set_title("Correlation Matrix")
+st.pyplot(fig)
